@@ -22,14 +22,14 @@ endmodule
 module sccomp(
     input          clk,
     input          rstn_i,
-    input  [15:0]  sw_i,       // 新增�?16位开关输�?
+    input  [15:0]  sw_i,       // æ–°å¢žï¼?16ä½å¼€å…³è¾“å…?
     //input  [4:0]   reg_sel,
-    output [7:0]   disp_seg_o, // 新增：数码管段�??
-    output [7:0]   disp_an_o // 新增：数码管位�??
-    //output [31:0]  reg_data    // 保留：寄存器调试输出
+    output [7:0]   disp_seg_o, // æ–°å¢žï¼šæ•°ç ç®¡æ®µé??
+    output [7:0]   disp_an_o // æ–°å¢žï¼šæ•°ç ç®¡ä½é??
+    //output [31:0]  reg_data    // ä¿ç•™ï¼šå¯„å­˜å™¨è°ƒè¯•è¾“å‡º
 );
    
-   // ---- 实例化消抖模�? ----
+   // ---- å®žä¾‹åŒ–æ¶ˆæŠ–æ¨¡å? ----
     wire [15:0] sw_db;
     genvar i;
     generate
@@ -42,18 +42,18 @@ module sccomp(
         end
     endgenerate
     wire [4:0]    reg_sel=sw_i[4:0];
-   // 确保�?有输出端口有实际驱动
+   // ç¡®ä¿æ‰?æœ‰è¾“å‡ºç«¯å£æœ‰å®žé™…é©±åŠ¨
    wire [31:0] reg_data;
-assign disp_seg_o = U_DISP.seg;  // 直接绑定到子模块输出
+assign disp_seg_o = U_DISP.seg;  // ç›´æŽ¥ç»‘å®šåˆ°å­æ¨¡å—è¾“å‡º
 assign disp_an_o = U_DISP.an;
-assign reg_data = U_SCPU.reg_data; // 直连SCPU输出
+assign reg_data = U_SCPU.reg_data; // ç›´è¿žSCPUè¾“å‡º
    
    wire [31:0]    instr;
    wire [31:0]    PC;
    wire           MemWrite;
    wire [31:0]    dm_addr, dm_din, dm_dout;  
    wire rst = ~rstn_i;
-    // 时钟分频逻辑
+    // æ—¶é’Ÿåˆ†é¢‘é€»è¾‘
     reg [31:0] clk_div;
     wire cpu_clk;
     always @(posedge clk) begin
@@ -92,45 +92,45 @@ assign reg_data = U_SCPU.reg_data; // 直连SCPU输出
       .a(PC[8:2]),     // input:  rom address
       .spo(instr)        // output: instruction
    );
-   reg [31:0] disp_reg; // 数码管显示寄存器
+   reg [31:0] disp_reg; // æ•°ç ç®¡æ˜¾ç¤ºå¯„å­˜å™¨
 
     always @(posedge clk) begin
         if (MemWrite && dm_addr == 32'hFFFF000C)
-            disp_reg <= dm_dout; // 捕获写入数码管的数据
+            disp_reg <= dm_dout; // æ•èŽ·å†™å…¥æ•°ç ç®¡çš„æ•°æ®
     end
 
-    // 外设数据路由
+    // å¤–è®¾æ•°æ®è·¯ç”±
     //wire [31:0] peripheral_data;
     assign peripheral_data = 
-        (dm_addr == 32'hFFFF0004) ? {16'b0, sw_i} : // �?关输�?
-        (dm_addr == 32'hFFFF000C) ? disp_reg       : // 数码管输�?
-        dm_dout;                                    // 默认存储器数�?
+        (dm_addr == 32'hFFFF0004) ? {16'b0, sw_i} : // å¼?å…³è¾“å…?
+        (dm_addr == 32'hFFFF000C) ? disp_reg       : // æ•°ç ç®¡è¾“å‡?
+        dm_dout;                                    // é»˜è®¤å­˜å‚¨å™¨æ•°æ?
 
-    // 新增数码管显示控�?
+    // æ–°å¢žæ•°ç ç®¡æ˜¾ç¤ºæŽ§åˆ?
     reg [31:0] display_value;
 
 always @(*) begin
     if (sw_db[5]) begin
-        // SW5=1：显示寄存器�?
+        // SW5=1ï¼šæ˜¾ç¤ºå¯„å­˜å™¨å€?
         display_value = reg_data;
     end else begin
-        // SW5=0：根据SW[4:0]选择显示内容
+        // SW5=0ï¼šæ ¹æ®SW[4:0]é€‰æ‹©æ˜¾ç¤ºå†…å®¹
         case (sw_db[4:0])
-            5'b00000: display_value = (disp_reg != 0) ? disp_reg : 32'hAA5555AA;  // 七段数码管写入�?�（CPU写入0xFFFF000C�?
-            5'b00001: display_value = PC >> 2;        // 指令编号
-            5'b00010: display_value = PC;             // 指令地址
-            5'b00011: display_value = instr;          // 指令
-            5'b00100: display_value = dm_addr;        // 地址
-            5'b00101: display_value = dm_din;         // 写入数据
-            5'b00110: display_value = dm_dout;        // 读出数据
-            5'b00111: display_value = dm_addr;        // 再次地址
-            5'b1????: display_value = 32'hFFFFFFFF;   // sw[4]=1时统�?处理
-            default:  display_value = 32'hAA5555AA;   // 默认�?
+            5'b00000: display_value = (disp_reg != 0) ? disp_reg : 32'hAA5555AA;  // ä¸ƒæ®µæ•°ç ç®¡å†™å…¥å?¼ï¼ˆCPUå†™å…¥0xFFFF000Cï¼?
+            5'b00001: display_value = PC >> 2;        // æŒ‡ä»¤ç¼–å·
+            5'b00010: display_value = PC;             // æŒ‡ä»¤åœ°å€
+            5'b00011: display_value = instr;          // æŒ‡ä»¤
+            5'b00100: display_value = dm_addr;        // åœ°å€
+            5'b00101: display_value = dm_din;         // å†™å…¥æ•°æ®
+            5'b00110: display_value = dm_dout;        // è¯»å‡ºæ•°æ®
+            5'b00111: display_value = dm_addr;        // å†æ¬¡åœ°å€
+            5'b1????: display_value = 32'hFFFFFFFF;   // sw[4]=1æ—¶ç»Ÿä¸?å¤„ç†
+            default:  display_value = 32'hAA5555AA;   // é»˜è®¤å€?
         endcase
     end
 end
 
-    // 数码管驱动实例化
+    // æ•°ç ç®¡é©±åŠ¨å®žä¾‹åŒ–
     seg7_display U_DISP(
         .clk(clk),
         .data(display_value),
